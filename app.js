@@ -10,6 +10,8 @@ const elements = {
 };
 let record = null;
 let notifiedForCurrentRecord = false;
+let pushSubscription = null;
+const pushServer = window.PUSH_SERVER_URL;
 
 function pad(value) { return String(value).padStart(2, "0"); }
 function localDateTime(date) { return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`; }
@@ -38,7 +40,13 @@ function notifyFull() {
 function saveRecord() {
   const energy = Number(elements.energy.value); const time = new Date(elements.time.value).getTime();
   if (!elements.time.value || !Number.isInteger(energy) || energy < 0 || energy > MAX_ENERGY) { showToast("请填写正确的时间和 0–100 的体力值"); return; }
-  record = { time, energy }; notifiedForCurrentRecord = false; localStorage.setItem(STORAGE_KEY, JSON.stringify(record)); updateDisplay(); showToast("已开始计算体力");
+  record = { time, energy }; notifiedForCurrentRecord = false; localStorage.setItem(STORAGE_KEY, JSON.stringify(record)); updateDisplay(); schedulePushReminder(); showToast("已开始计算体力");
+}
+function base64ToUint8Array(value) { const padded = `${value}${"=".repeat((4 - value.length % 4) % 4)}`.replace(/-/g, "+").replace(/_/g, "/"); return Uint8Array.from(atob(padded), c => c.charCodeAt(0)); }
+async function schedulePushReminder() {
+  if (!pushSubscription || !record || !pushServer || record.energy >= MAX_ENERGY) return;
+  const fullAt = record.time + (MAX_ENERGY - record.energy) * RECOVERY_MS;
+  try { await fetch(`${pushServer}/schedule`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subscription: pushSubscription.toJSON(), fullAt }) }); } catch { /* 页面内倒计时仍可正常使用 */ }
 }
 function updateNotificationUI() {
   if (!("Notification" in window)) { elements.notificationButton.disabled = true; elements.notificationCopy.textContent = "此浏览器不支持系统通知。"; return; }
@@ -47,7 +55,18 @@ function updateNotificationUI() {
 document.querySelector("#save-record").addEventListener("click", saveRecord);
 document.querySelector("#decrease").addEventListener("click", () => { elements.energy.value = Math.max(0, (Number(elements.energy.value) || 0) - 1); });
 document.querySelector("#increase").addEventListener("click", () => { elements.energy.value = Math.min(MAX_ENERGY, (Number(elements.energy.value) || 0) + 1); });
-elements.notificationButton.addEventListener("click", async () => { if ("Notification" in window) { await Notification.requestPermission(); updateNotificationUI(); if (Notification.permission !== "granted") showToast("请在浏览器设置中允许通知"); } });
+elements.notificationButton.addEventListener("click", async () => {
+  if (!("Notification" in window)) return;
+  const permission = await Notification.requestPermission(); updateNotificationUI();
+  if (permission !== "granted") { showToast("请在浏览器设置中允许通知"); return; }
+  try {
+    if (!pushServer || !("PushManager" in window)) throw new Error("unsupported");
+    const registration = await navigator.serviceWorker.ready;
+    const { publicKey } = await (await fetch(`${pushServer}/config`)).json();
+    pushSubscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: base64ToUint8Array(publicKey) });
+    await schedulePushReminder(); showToast("已开启满体后台提醒");
+  } catch { showToast("请先添加到主屏幕后，再开启后台提醒"); }
+});
 try { record = JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch { record = null; }
 if (record) { elements.time.value = localDateTime(new Date(record.time)); elements.energy.value = record.energy; updateDisplay(); } else { elements.time.value = localDateTime(new Date()); }
 updateNotificationUI(); setInterval(updateDisplay, 1000);
