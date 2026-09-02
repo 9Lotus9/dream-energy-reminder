@@ -1,0 +1,25 @@
+:root { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; color: #26213c; background: #f3f0ff; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; background: radial-gradient(circle at 85% 0%, #d9ccff 0, transparent 32%), linear-gradient(150deg, #f8f6ff, #eee9ff); }
+button, input { font: inherit; }
+.app-shell { width: min(100%, 560px); min-height: 100vh; margin: auto; padding: max(32px, env(safe-area-inset-top)) 20px max(28px, env(safe-area-inset-bottom)); }
+header { margin: 4px 4px 24px; }
+.eyebrow { margin: 0 0 5px; font-size: 13px; font-weight: 700; letter-spacing: .1em; color: #7258c8; }
+h1 { margin: 0; font-size: 31px; letter-spacing: -.04em; }
+.subtitle { margin: 8px 0 0; color: #6e6880; font-size: 14px; }
+.energy-card, .form-card, .reminder-card { border: 1px solid rgba(255,255,255,.75); border-radius: 24px; box-shadow: 0 12px 32px rgba(67, 43, 142, .10); }
+.energy-card { padding: 24px; color: #fff; background: linear-gradient(135deg, #6742ce, #9a67e8); }
+.energy-topline, .card-heading, .reminder-card { display: flex; justify-content: space-between; align-items: center; gap: 14px; }
+.energy-topline { font-size: 15px; font-weight: 600; }
+.status-badge { padding: 5px 10px; border-radius: 99px; background: rgba(255,255,255,.2); font-size: 12px; }
+.energy-number { display: flex; align-items: baseline; gap: 5px; margin: 12px 0; }
+.energy-number strong { font-size: 62px; line-height: 1; letter-spacing: -.06em; }.energy-number span { font-size: 18px; opacity: .82; }
+.progress-track { height: 10px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.25); }.progress-fill { height: 100%; width: 0; border-radius: inherit; background: #fff; transition: width .35s ease; }
+.recovery-message { min-height: 20px; margin: 14px 0 0; font-size: 14px; opacity: .92; }
+.form-card { margin-top: 18px; padding: 22px; background: rgba(255,255,255,.78); }.card-heading { margin-bottom: 18px; }.card-heading h2, .reminder-card h2 { margin: 0; font-size: 17px; }.card-heading span { color: #817b91; font-size: 12px; }
+label { display: block; margin: 15px 0; color: #524c62; font-size: 14px; font-weight: 600; } input { width: 100%; margin-top: 8px; padding: 13px; border: 1px solid #ded8eb; border-radius: 12px; outline: none; background: #fff; color: #26213c; } input:focus { border-color: #7c56d9; box-shadow: 0 0 0 3px #e6ddff; }
+.number-input { display: flex; margin-top: 8px; }.number-input input { margin: 0; border-radius: 0; text-align: center; }.number-input button { width: 50px; border: 1px solid #ded8eb; background: #f7f4ff; color: #6043b7; font-size: 25px; }.number-input button:first-child { border-radius: 12px 0 0 12px; }.number-input button:last-child { border-radius: 0 12px 12px 0; }
+.primary-button { width: 100%; margin-top: 6px; padding: 14px; border: 0; border-radius: 13px; background: #5c3bc1; color: #fff; font-weight: 700; box-shadow: 0 6px 14px #c5b6ed; }.primary-button:active { transform: translateY(1px); }
+.reminder-card { margin-top: 18px; padding: 18px 20px; background: #fff; }.reminder-card p { margin: 5px 0 0; color: #777082; font-size: 12px; line-height: 1.45; }.outline-button { flex: none; border: 1px solid #7051cb; border-radius: 10px; padding: 9px 12px; color: #6041b8; background: #faf8ff; font-size: 13px; font-weight: 700; }
+.install-tip { margin: 22px 8px 0; color: #827b92; font-size: 12px; line-height: 1.6; text-align: center; }.toast { position: fixed; bottom: 28px; left: 50%; max-width: calc(100% - 36px); transform: translate(-50%, 90px); padding: 12px 17px; border-radius: 12px; background: #2b253c; color: #fff; font-size: 14px; opacity: 0; transition: .25s ease; }.toast.show { transform: translate(-50%, 0); opacity: 1; }
+@media (max-width: 360px) { .app-shell { padding-left: 14px; padding-right: 14px; }.energy-number strong { font-size: 54px; }.reminder-card { align-items: flex-start; }.outline-button { padding: 8px; } }
