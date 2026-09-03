@@ -37,20 +37,25 @@ function notifyFull() {
   showToast("体力已经恢复满啦！");
   if ("Notification" in window && Notification.permission === "granted") new Notification("梦幻消除战体力已满", { body: "体力已恢复至 100 点，快去闯关吧！", icon: "icon-192.svg" });
 }
-function saveRecord() {
+async function saveRecord() {
   const energy = Number(elements.energy.value); const time = new Date(elements.time.value).getTime();
   if (!elements.time.value || !Number.isInteger(energy) || energy < 0 || energy > MAX_ENERGY) { showToast("请填写正确的时间和 0–100 的体力值"); return; }
-  record = { time, energy }; notifiedForCurrentRecord = false; localStorage.setItem(STORAGE_KEY, JSON.stringify(record)); updateDisplay(); schedulePushReminder(); showToast("已开始计算体力");
+  record = { time, energy }; notifiedForCurrentRecord = false; localStorage.setItem(STORAGE_KEY, JSON.stringify(record)); updateDisplay();
+  const synced = await schedulePushReminder();
+  showToast(synced ? "已开始计算，满体提醒已同步" : "已开始计算；请点击开启提醒以同步满体通知");
 }
 function base64ToUint8Array(value) { const padded = `${value}${"=".repeat((4 - value.length % 4) % 4)}`.replace(/-/g, "+").replace(/_/g, "/"); return Uint8Array.from(atob(padded), c => c.charCodeAt(0)); }
 async function schedulePushReminder() {
-  if (!pushSubscription || !record || !pushServer || record.energy >= MAX_ENERGY) return;
+  if (!pushSubscription || !record || !pushServer || record.energy >= MAX_ENERGY) return false;
   const fullAt = record.time + (MAX_ENERGY - record.energy) * RECOVERY_MS;
-  try { await fetch(`${pushServer}/schedule`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subscription: pushSubscription.toJSON(), fullAt }) }); } catch { /* 页面内倒计时仍可正常使用 */ }
+  try {
+    const response = await fetch(`${pushServer}/schedule`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subscription: pushSubscription.toJSON(), fullAt }), keepalive: true });
+    return response.ok;
+  } catch { return false; }
 }
 function updateNotificationUI() {
   if (!("Notification" in window)) { elements.notificationButton.disabled = true; elements.notificationCopy.textContent = "此浏览器不支持系统通知。"; return; }
-  const granted = Notification.permission === "granted"; elements.notificationButton.textContent = granted ? "提醒已开启" : "开启提醒"; elements.notificationCopy.textContent = granted ? "体力满时会发送系统通知。" : "开启通知后，体力满时将提醒你。";
+  const granted = Notification.permission === "granted"; elements.notificationButton.textContent = granted && pushSubscription ? "后台提醒已开启" : "开启后台提醒"; elements.notificationCopy.textContent = granted && pushSubscription ? "满体时间已同步到后台，关闭应用后也会提醒。" : "请开启并同步后台满体提醒。";
 }
 document.querySelector("#save-record").addEventListener("click", saveRecord);
 document.querySelector("#decrease").addEventListener("click", () => { elements.energy.value = Math.max(0, (Number(elements.energy.value) || 0) - 1); });
@@ -64,10 +69,11 @@ elements.notificationButton.addEventListener("click", async () => {
     const registration = await navigator.serviceWorker.ready;
     const { publicKey } = await (await fetch(`${pushServer}/config`)).json();
     pushSubscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: base64ToUint8Array(publicKey) });
-    await schedulePushReminder(); showToast("已开启满体后台提醒");
+    const synced = await schedulePushReminder(); updateNotificationUI();
+    showToast(synced ? "已开启并同步后台满体提醒" : "通知权限已开启，但后台同步失败，请检查网络后重试");
   } catch { showToast("请先添加到主屏幕后，再开启后台提醒"); }
 });
 try { record = JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch { record = null; }
 if (record) { elements.time.value = localDateTime(new Date(record.time)); elements.energy.value = record.energy; updateDisplay(); } else { elements.time.value = localDateTime(new Date()); }
 updateNotificationUI(); setInterval(updateDisplay, 1000);
-if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").then(async registration => { pushSubscription = await registration.pushManager.getSubscription(); updateNotificationUI(); });
