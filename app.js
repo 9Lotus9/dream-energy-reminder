@@ -58,6 +58,7 @@ function updateNotificationUI() {
   const granted = Notification.permission === "granted"; elements.notificationButton.textContent = granted && pushSubscription ? "后台提醒已开启" : "开启后台提醒"; elements.notificationCopy.textContent = granted && pushSubscription ? "满体时间已同步到后台，关闭应用后也会提醒。" : "请开启并同步后台满体提醒。";
 }
 document.querySelector("#save-record").addEventListener("click", saveRecord);
+document.querySelector("#use-current-time").addEventListener("click", () => { elements.time.value = localDateTime(new Date()); showToast("已填入现在时间"); });
 document.querySelector("#decrease").addEventListener("click", () => { elements.energy.value = Math.max(0, (Number(elements.energy.value) || 0) - 1); });
 document.querySelector("#increase").addEventListener("click", () => { elements.energy.value = Math.min(MAX_ENERGY, (Number(elements.energy.value) || 0) + 1); });
 elements.notificationButton.addEventListener("click", async () => {
